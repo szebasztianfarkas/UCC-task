@@ -1,0 +1,199 @@
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: rgba(14, 11, 22, 0.9);
+  border-right: 1px solid rgba(139, 92, 246, 0.12);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e4e0f0;
+  margin-bottom: 32px;
+  padding-left: 6px;
+}
+
+.brand-mark { font-size: 18px; color: #a78bfa; }
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #4a4265;
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+}
+
+.nav-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nav-item:not(:disabled):hover {
+  background: rgba(139, 92, 246, 0.08);
+  color: #a78bfa;
+}
+
+.nav-item--active {
+  background: rgba(139, 92, 246, 0.12) !important;
+  color: #a78bfa !important;
+}
+
+.nav-item:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.nav-badge {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3d3654;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  min-width: 0;
+  position: relative;
+}
+
+.user-chip:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.user-chip:hover .user-edit-icon {
+  opacity: 1;
+}
+
+.user-initial {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #0d9488);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: 'Cabinet Grotesk', sans-serif;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c4b8e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 10px;
+  color: #3d3654;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.user-edit-icon {
+  width: 13px;
+  height: 13px;
+  color: #6b5fa0;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.05);
+  color: #f87171;
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.logout-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.logout-btn:hover {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+}
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+}

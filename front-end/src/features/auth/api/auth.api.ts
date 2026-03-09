@@ -30,5 +30,5 @@ export const authApi = {
     apiClient.post('/auth/password/reset/confirm/', { token, new_password: newPassword }),
 
   me: (): Promise<AxiosResponse<AuthUser>> =>
-    apiClient.get('/auth/me/'),
+    apiClient.get('/users/me/'),
 }

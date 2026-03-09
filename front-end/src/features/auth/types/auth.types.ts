@@ -1,4 +1,4 @@
-export type AuthView = 'login' | 'mfa' | 'recovery' | 'reset-request' | 'reset-sent'
+export type AuthView = 'login' | 'mfa' | 'recovery' | 'reset-request' | 'reset-sent' | 'reset-confirm' | 'reset-complete'
 
 export interface LoginCredentials {
   username: string
@@ -38,5 +38,8 @@ export interface AuthErrors {
   otp?: string
   recovery?: string
   resetEmail?: string
+  newPassword?: string
+  confirmPassword?: string
+  resetToken?: string
   general?: string
 }

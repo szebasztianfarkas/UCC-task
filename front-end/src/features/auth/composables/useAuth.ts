@@ -8,7 +8,7 @@ export function useAuth() {
 
   async function handleLogin(credentials: LoginCredentials): Promise<{ mfa_required: boolean }> {
     const result = await auth.login(credentials)
-    console.log(result)
+
     if (!result.mfa_required) {
       await router.push({ name: 'dashboard' })
     }

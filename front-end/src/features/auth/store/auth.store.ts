@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { authApi } from '../api/auth.api'
 import type { AuthUser, LoginCredentials, MfaRequiredResponse, LoginApiResponse } from '../types/auth.types'
 

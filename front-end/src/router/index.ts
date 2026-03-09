@@ -27,15 +27,16 @@ const routes: RouteRecordRaw[] = [
     path: '/reset-password',
     name: 'reset-password',
     component: () => import('@/features/auth/components/Auth.vue'),
+    props: (route) => ({ resetToken: route.query.token || null }),
     meta: { requiresGuest: true },
   },
-  /*
   {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/features/dashboard/components/DashboardView.vue'),
     meta: { requiresAuth: true },
   },
+  /*
   {
     path: '/users',
     name: 'users',
@@ -66,6 +67,8 @@ router.beforeEach((to) => {
   }
 
   document.title = to.meta.title? `${to.meta.title} | ${DEFAULT_NAME}` : DEFAULT_NAME;
+
+  if (auth.isAuthenticated && !auth.user) auth.fetchMe()
 
   return true
 })
