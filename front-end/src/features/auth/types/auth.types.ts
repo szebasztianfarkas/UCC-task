@@ -1,0 +1,42 @@
+export type AuthView = 'login' | 'mfa' | 'recovery' | 'reset-request' | 'reset-sent'
+
+export interface LoginCredentials {
+  username: string
+  password: string
+}
+
+export interface AuthUser {
+  id: number
+  username: string
+  email: string
+  bio: string
+  avatar: string
+}
+
+export interface LoginResponse {
+  access: string
+  refresh: string
+  user: AuthUser
+}
+
+export interface MfaRequiredResponse {
+  mfa_required: true
+  mfa_token: string
+}
+
+export interface MfaVerifyResponse {
+  access: string
+  refresh: string
+  user: AuthUser
+}
+
+export type LoginApiResponse = LoginResponse | MfaRequiredResponse
+
+export interface AuthErrors {
+  username?: string
+  password?: string
+  otp?: string
+  recovery?: string
+  resetEmail?: string
+  general?: string
+}
