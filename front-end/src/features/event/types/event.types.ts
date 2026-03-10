@@ -34,4 +34,5 @@ export interface EventFilters {
   search?: string
   upcoming?: boolean
   attending?: boolean
+  createdBy?: boolean
 }

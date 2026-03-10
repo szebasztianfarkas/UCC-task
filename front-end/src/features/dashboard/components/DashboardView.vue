@@ -40,6 +40,9 @@
           <button class="pill" :class="{ 'pill--active': filters.attending }" @click="toggleFilter('attending')">
             Attending
           </button>
+          <button class="pill" :class="{ 'pill--active': filters.createdBy }" @click="toggleFilter('createdBy')">
+            My Events
+          </button>
         </div>
       </div>
 
@@ -145,7 +148,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useEventsStore } from '@/features/event/store/event.store'
 import type { Event, EventFilters } from '@/features/event/types/event.types'
 import Sidebar from '@/features/sidebar/components/Sidebar.vue'
-import EventCard from './EventCard.vue'
+import EventCard from '../../event/components/EventCard.vue'
 import './dashboard.css'
 
 const store = useEventsStore()
@@ -160,7 +163,7 @@ function onSearchInput() {
   searchTimer = setTimeout(applyFilters, 350)
 }
 
-function toggleFilter(key: 'upcoming' | 'attending') {
+function toggleFilter(key: 'upcoming' | 'attending' | 'createdBy') {
   filters[key] = !filters[key]
   applyFilters()
 }
@@ -170,6 +173,7 @@ function applyFilters() {
     search:    search.value || undefined,
     upcoming:  filters.upcoming  || undefined,
     attending: filters.attending || undefined,
+    createdBy: filters.createdBy || undefined,
   })
 }
 

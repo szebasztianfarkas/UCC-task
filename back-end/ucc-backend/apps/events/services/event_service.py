@@ -9,7 +9,7 @@ class EventNotFound(Exception):
 
 class EventService:
     @staticmethod
-    def get_all_events(search=None, upcoming_only=False, attending_user=None):
+    def get_all_events(search=None, upcoming_only=False, attending_user=None, created_by_user=None):
         qs = Event.objects.select_related('created_by').prefetch_related('attendees')
 
         if search:
@@ -23,6 +23,9 @@ class EventService:
 
         if attending_user:
             qs = qs.filter(attendees=attending_user)
+
+        if created_by_user:
+            qs = qs.filter(created_by=created_by_user)
 
         return qs
 

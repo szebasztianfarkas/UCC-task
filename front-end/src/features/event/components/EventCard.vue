@@ -62,6 +62,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Event } from '@/features/event/types/event.types'
+import './eventcard.css'
 
 const props = defineProps<{ event: Event }>()
 defineEmits<{

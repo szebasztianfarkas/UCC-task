@@ -40,6 +40,8 @@ class EventListView(APIView):
                              description='If true, only returns future events.'),
             OpenApiParameter('attending', OpenApiTypes.BOOL, OpenApiParameter.QUERY,
                              description='If true, only returns events the current user is attending.'),
+            OpenApiParameter('createdBy', OpenApiTypes.BOOL, OpenApiParameter.QUERY,
+                             description='If true, only returns the events the current user has created.'),
         ],
         responses={200: EventSerializer(many=True)},
     )
@@ -47,11 +49,13 @@ class EventListView(APIView):
         search        = request.query_params.get('search', '').strip() or None
         upcoming_only = request.query_params.get('upcoming') == 'true'
         attending     = request.query_params.get('attending') == 'true'
+        created_by    = request.query_params.get('createdBy') == 'true'
 
         events = EventService.get_all_events(
             search=search,
             upcoming_only=upcoming_only,
             attending_user=request.user if attending else None,
+            created_by_user=request.user if created_by else None
         )
         return Response(_serialize(events, request, many=True))
 
