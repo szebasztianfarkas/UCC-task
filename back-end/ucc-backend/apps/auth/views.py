@@ -15,7 +15,7 @@ from apps.auth.serializers import (
 from apps.auth.services.auth_service import AuthService
 from apps.auth.services.mfa_service import MFAService
 from apps.auth.services.password_reset_service import PasswordResetService
-from apps.users.serializers import UserSerializer
+from apps.users.serializers import MeSerializer
 
 
 def _validation_error_response(e):
@@ -60,7 +60,7 @@ class LoginView(APIView):
         return Response({
             'access': result['access'],
             'refresh': result['refresh'],
-            'user': UserSerializer(result['user']).data,
+            'user': MeSerializer(result['user']).data,
         })
 
 
@@ -109,7 +109,7 @@ class MFAVerifyView(APIView):
         return Response({
             'access': result['access'],
             'refresh': result['refresh'],
-            'user': UserSerializer(result['user']).data,
+            'user': MeSerializer(result['user']).data,
         })
 
 
@@ -143,7 +143,7 @@ class MFARecoveryView(APIView):
         return Response({
             'access': result['access'],
             'refresh': result['refresh'],
-            'user': UserSerializer(result['user']).data,
+            'user': MeSerializer(result['user']).data,
         })
 
 

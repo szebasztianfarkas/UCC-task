@@ -3,12 +3,28 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 class UserSerializer(serializers.ModelSerializer):
+    is_helpdesk_agent = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'bio', 'is_active', 'date_joined']
-        read_only_fields = ['id', 'is_active', 'date_joined']
+        fields = ['id', 'username', 'email', 'bio', 'is_active', 'date_joined', 'has_mfa', 'is_helpdesk_agent']
+        read_only_fields = ['id', 'is_active', 'date_joined', 'has_mfa', 'is_helpdesk_agent']
+
+    def get_has_mfa(self, obj):
+        try:
+            return obj.mfa_device.is_active
+        except Exception:
+            return False
+
+    def get_is_helpdesk_agent(self, obj):
+        return obj.groups.filter(name='helpdesk_agent').exists()
 
 class MeSerializer(UserSerializer):
     has_mfa = serializers.SerializerMethodField()
@@ -17,7 +33,7 @@ class MeSerializer(UserSerializer):
         fields = UserSerializer.Meta.fields + ['has_mfa']
 
     def get_has_mfa(self, obj):
-        return obj.mfa_device is not None
+        return hasattr(obj, "mfa_device")
 
 class CreateUserSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
@@ -45,20 +61,17 @@ class EmailChangeInitiateSerializer(serializers.Serializer):
 
 
 class EmailChangeConfirmSerializer(serializers.Serializer):
-    request_token = serializers.CharField(required=False, allow_blank=True)
-    totp_code     = serializers.CharField(required=False, allow_blank=True)
-    email_token   = serializers.CharField(required=False, allow_blank=True)
-
-    def validate(self, data):
-        has_mfa   = data.get('request_token') and data.get('totp_code')
-        has_email = bool(data.get('email_token'))
-        if not has_mfa and not has_email:
-            raise serializers.ValidationError(
-                'Provide either (request_token + totp_code) or email_token.'
-            )
-        return data
+    email_token = serializers.CharField()
 
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True, min_length=8)
+    totp_code    = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'bio', 'is_active', 'date_joined']
+        read_only_fields = ['id', 'is_active', 'date_joined']

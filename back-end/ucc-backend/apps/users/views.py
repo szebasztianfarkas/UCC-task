@@ -106,7 +106,9 @@ class MeView(APIView):
 
     @extend_schema(tags=['Users'], summary='Get my profile', responses={200: MeSerializer})
     def get(self, request):
-        return Response(MeSerializer(request.user).data)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        return Response(MeSerializer(User.objects.prefetch_related('groups').get(pk=request.user.pk)).data)
 
     @extend_schema(
         tags=['Users'], summary='Update my profile (bio)',
@@ -116,7 +118,7 @@ class MeView(APIView):
         serializer = UpdateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         updated = UserService.update_user(request.user, **serializer.validated_data)
-        return Response(MeSerializer(updated).data)
+        return Response(MeSerializer(User.objects.prefetch_related('groups').get(pk=request.user.pk)).data)
 
 
 class ChangePasswordView(APIView):

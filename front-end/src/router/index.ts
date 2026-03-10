@@ -42,14 +42,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/profile/components/Profile.vue'),
     meta: { requiresAuth: true },
   },
-  /*
   {
-    path: '/users',
-    name: 'users',
-    component: () => import('@/features/users/components/UsersView.vue'),
+    path: '/helpdesk',
+    name: 'helpdesk',
+    component: () => import('@/features/helpdesk/components/Helpdesk.vue'),
     meta: { requiresAuth: true },
   },
-  */
+  {
+    path: '/helpdesk/agent',
+    name: 'helpdesk-agent',
+    component: () => import('@/features/helpdesk/components/Agent.vue'),
+    meta: { requiresAuth: true },
+  },
   {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard',

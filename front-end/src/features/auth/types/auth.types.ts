@@ -11,6 +11,7 @@ export interface AuthUser {
   email: string
   bio: string
   has_mfa: boolean
+  is_helpdesk_agent: boolean
 }
 
 export interface LoginResponse {

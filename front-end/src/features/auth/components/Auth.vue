@@ -29,7 +29,7 @@
                   type="text"
                   autocomplete="username"
                   spellcheck="false"
-                  placeholder="you@organisation.com"
+                  placeholder="username"
                   @input="clearError('username')"
                 />
                 <span v-if="errors.username" class="field-error">{{ errors.username }}</span>

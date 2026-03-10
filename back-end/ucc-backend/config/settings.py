@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.auth',
     'apps.events',
+    'apps.helpdesk',
 ]
 
 AUTH_USER_MODEL = 'users.User'
@@ -60,6 +61,13 @@ TEMPLATES = [{
 }]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION  = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
