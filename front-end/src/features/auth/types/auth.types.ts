@@ -10,7 +10,7 @@ export interface AuthUser {
   username: string
   email: string
   bio: string
-  avatar: string
+  has_mfa: boolean
 }
 
 export interface LoginResponse {

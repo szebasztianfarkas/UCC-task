@@ -10,6 +10,14 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'bio', 'is_active', 'date_joined']
         read_only_fields = ['id', 'is_active', 'date_joined']
 
+class MeSerializer(UserSerializer):
+    has_mfa = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ['has_mfa']
+
+    def get_has_mfa(self, obj):
+        return obj.mfa_device is not None
 
 class CreateUserSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
@@ -29,17 +37,26 @@ class CreateUserSerializer(serializers.Serializer):
 
 
 class UpdateUserSerializer(serializers.Serializer):
-    email  = serializers.EmailField(required=False)
-    bio    = serializers.CharField(required=False, allow_blank=True)
+    bio = serializers.CharField(required=False, allow_blank=True)
 
-    def validate_email(self, value):
-        user = self.context.get('user')
-        qs = User.objects.filter(email__iexact=value)
-        if user:
-            qs = qs.exclude(pk=user.pk)
-        if qs.exists():
-            raise serializers.ValidationError('That email is already in use.')
-        return value
+
+class EmailChangeInitiateSerializer(serializers.Serializer):
+    new_email = serializers.EmailField()
+
+
+class EmailChangeConfirmSerializer(serializers.Serializer):
+    request_token = serializers.CharField(required=False, allow_blank=True)
+    totp_code     = serializers.CharField(required=False, allow_blank=True)
+    email_token   = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, data):
+        has_mfa   = data.get('request_token') and data.get('totp_code')
+        has_email = bool(data.get('email_token'))
+        if not has_mfa and not has_email:
+            raise serializers.ValidationError(
+                'Provide either (request_token + totp_code) or email_token.'
+            )
+        return data
 
 
 class ChangePasswordSerializer(serializers.Serializer):

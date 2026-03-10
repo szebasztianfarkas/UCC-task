@@ -74,3 +74,30 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f'Password reset token for {self.user}'
+
+
+class EmailChangeRequest(models.Model):
+    PENDING = 'pending'
+    CONFIRMED = 'confirmed'
+    STATUS_CHOICES = [(PENDING, 'Pending'), (CONFIRMED, 'Confirmed')]
+
+    user       = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='email_change_requests',
+    )
+    new_email  = models.EmailField()
+    token      = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe)
+    status     = models.CharField(max_length=16, choices=STATUS_CHOICES, default=PENDING)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Email Change Request'
+        ordering = ['-created_at']
+
+    def is_valid(self):
+        return self.status == self.PENDING and timezone.now() < self.expires_at
+
+    def __str__(self):
+        return f'Email change for {self.user} → {self.new_email}'

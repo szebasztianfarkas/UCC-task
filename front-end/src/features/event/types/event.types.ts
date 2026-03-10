@@ -1,7 +1,6 @@
 export interface EventAttendee {
   id: number
   username: string
-  avatar: string
 }
 
 export interface Event {
