@@ -63,11 +63,12 @@ class UserDetailView(APIView):
 
     @extend_schema(tags=['Users'], summary='Get user', responses={200: UserSerializer})
     def get(self, request, pk):
+        if not request.user.is_staff and request.user.pk != pk:
+            log_security_event('permission_denied', request, user=request.user, detail=f'GET /users/{pk}/', level='warning')
+            return Response(status=status.HTTP_403_FORBIDDEN)
         user = _get_user_or_404(pk)
         if not user:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        if not request.user.is_staff and request.user.pk != pk:
-            return Response(status=status.HTTP_403_FORBIDDEN)
         return Response(UserSerializer(user).data)
 
     @extend_schema(
@@ -75,11 +76,12 @@ class UserDetailView(APIView):
         request=UpdateUserSerializer, responses={200: UserSerializer},
     )
     def patch(self, request, pk):
+        if request.user.pk != pk:
+            log_security_event('permission_denied', request, user=request.user, detail=f'PATCH /users/{pk}/', level='warning')
+            return Response(status=status.HTTP_403_FORBIDDEN)
         user = _get_user_or_404(pk)
         if not user:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        if request.user.pk != pk:
-            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = UpdateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         updated = UserService.update_user(user, **serializer.validated_data)
@@ -88,6 +90,7 @@ class UserDetailView(APIView):
     @extend_schema(tags=['Users'], summary='Deactivate user', responses={204: None})
     def delete(self, request, pk):
         if not request.user.is_staff:
+            log_security_event('permission_denied', request, user=request.user, detail=f'DELETE /users/{pk}/', level='warning')
             return Response(status=status.HTTP_403_FORBIDDEN)
         user = _get_user_or_404(pk)
         if not user:
@@ -98,6 +101,7 @@ class UserDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         UserService.deactivate_user(user)
+        log_security_event('user_deactivated', request, user=request.user, detail=f'deactivated user_id={pk}')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -135,7 +139,10 @@ class ChangePasswordView(APIView):
         try:
             UserService.change_password(request.user, **serializer.validated_data)
         except ValidationError as e:
+            log_security_event('password_change_failed', request, user=request.user, detail=str(e), level='warning')
             return _err(e)
+
+        log_security_event('password_changed', request, user=request.user)
         return Response({'detail': 'Password updated.'})
 
 
@@ -162,6 +169,8 @@ class EmailChangeInitiateView(APIView):
             result = EmailChangeService.initiate(request.user, serializer.validated_data['new_email'])
         except ValidationError as e:
             return _err(e)
+
+        log_security_event('email_change_initiated', request, user=request.user)
         return Response(result)
 
 
@@ -189,4 +198,6 @@ class EmailChangeConfirmView(APIView):
             EmailChangeService.confirm_with_email_token(request.user, d['email_token'])
         except ValidationError as e:
             return _err(e)
+        
+        log_security_event('email_changed', request, user=request.user)
         return Response({'detail': 'Email address updated.'})

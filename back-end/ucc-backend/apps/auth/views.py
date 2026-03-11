@@ -15,7 +15,9 @@ from apps.auth.serializers import (
 from apps.auth.services.auth_service import AuthService
 from apps.auth.services.mfa_service import MFAService
 from apps.auth.services.password_reset_service import PasswordResetService
-from apps.users.serializers import MeSerializer
+from apps.users.serializers import UserSerializer
+from config.throttles import LoginRateThrottle, PasswordResetThrottle, MFAThrottle
+from config.logging import log_security_event
 
 
 def _validation_error_response(e):
@@ -24,28 +26,14 @@ def _validation_error_response(e):
 
 
 class LoginView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes  = [AllowAny]
+    throttle_classes    = [LoginRateThrottle]
 
     @extend_schema(
-        tags=['Auth'],
-        summary='Login',
-        description=(
-            'Step 1 of authentication. Returns full JWT tokens if the user has no MFA device, '
-            'or a short-lived `mfa_token` if MFA is enabled.'
-        ),
+        tags=['Auth'], summary='Login',
         request=LoginSerializer,
-        responses={
-            200: OpenApiResponse(description='Authenticated — returns tokens and user, or mfa_required flag.'),
-            401: OpenApiResponse(description='Invalid credentials or account disabled.'),
-        },
-        examples=[
-            OpenApiExample('No MFA', value={
-                'access': 'eyJ...', 'refresh': 'eyJ...', 'user': {'id': 1, 'username': 'alice'}
-            }),
-            OpenApiExample('MFA required', value={
-                'mfa_required': True, 'mfa_token': 'abc123xyz'
-            }),
-        ],
+        responses={200: OpenApiResponse(description='Tokens or MFA challenge.'),
+                   401: OpenApiResponse(description='Invalid credentials.')},
         auth=[],
     )
     def post(self, request):
@@ -54,13 +42,20 @@ class LoginView(APIView):
         try:
             result = AuthService.login(**serializer.validated_data)
         except ValidationError as e:
+            log_security_event('login_failure', request,
+                               user=serializer.validated_data.get('username'),
+                               detail=str(e), level='warning')
             return Response({'detail': e.message}, status=status.HTTP_401_UNAUTHORIZED)
+
         if result.get('mfa_required'):
+            log_security_event('login_mfa_required', request, user=result.get('user'))
             return Response({'mfa_required': True, 'mfa_token': result['mfa_token']})
+
+        log_security_event('login_success', request, user=result['user'])
         return Response({
-            'access': result['access'],
+            'access':  result['access'],
             'refresh': result['refresh'],
-            'user': MeSerializer(result['user']).data,
+            'user':    UserSerializer(result['user']).data,
         })
 
 
@@ -68,32 +63,36 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        tags=['Auth'],
-        summary='Logout',
-        description='Blacklists the provided refresh token, invalidating the session.',
-        request={'application/json': {'type': 'object', 'properties': {'refresh': {'type': 'string'}}}},
-        responses={204: OpenApiResponse(description='Logged out successfully.')},
+        tags=['Auth'], summary='Logout',
+        request={'application/json': {'type': 'object',
+                 'properties': {'refresh': {'type': 'string'}}}},
+        responses={204: OpenApiResponse(description='Logged out.')},
     )
     def post(self, request):
         refresh_token = request.data.get('refresh', '')
         AuthService.logout(refresh_token)
+        log_security_event('logout', request, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(tags=['Auth'], summary='Get current user',
+                   responses={200: UserSerializer})
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
 
 class MFAVerifyView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes   = [MFAThrottle]
 
     @extend_schema(
-        tags=['Auth — MFA'],
-        summary='Verify TOTP code',
-        description=(
-            'Step 2a of authentication. Exchanges a valid `mfa_token` and a 6-digit '
-            'TOTP code from an authenticator app for full JWT tokens.'
-        ),
+        tags=['Auth — MFA'], summary='Verify TOTP code',
         request=MFAVerifySerializer,
-        responses={
-            200: OpenApiResponse(description='MFA verified — returns tokens and user.'),
-            400: OpenApiResponse(description='Invalid or expired MFA session, or wrong code.'),
-        },
+        responses={200: OpenApiResponse(description='MFA verified.'),
+                   400: OpenApiResponse(description='Invalid code.')},
         auth=[],
     )
     def post(self, request):
@@ -105,29 +104,27 @@ class MFAVerifyView(APIView):
                 code=serializer.validated_data['code'],
             )
         except ValidationError as e:
+            log_security_event('mfa_failure', request,
+                               detail='TOTP verify failed', level='warning')
             return _validation_error_response(e)
+
+        log_security_event('mfa_success', request, user=result['user'])
         return Response({
-            'access': result['access'],
+            'access':  result['access'],
             'refresh': result['refresh'],
-            'user': MeSerializer(result['user']).data,
+            'user':    UserSerializer(result['user']).data,
         })
 
 
 class MFARecoveryView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes   = [MFAThrottle]
 
     @extend_schema(
-        tags=['Auth — MFA'],
-        summary='Verify recovery code',
-        description=(
-            'Step 2b of authentication. Exchanges a valid `mfa_token` and a one-time '
-            'recovery code for full JWT tokens. The recovery code is marked as used.'
-        ),
+        tags=['Auth — MFA'], summary='Verify recovery code',
         request=MFARecoverySerializer,
-        responses={
-            200: OpenApiResponse(description='Recovery code accepted — returns tokens and user.'),
-            400: OpenApiResponse(description='Invalid, expired, or already used recovery code.'),
-        },
+        responses={200: OpenApiResponse(description='Recovery code accepted.'),
+                   400: OpenApiResponse(description='Invalid code.')},
         auth=[],
     )
     def post(self, request):
@@ -139,24 +136,24 @@ class MFARecoveryView(APIView):
                 code=serializer.validated_data['code'],
             )
         except ValidationError as e:
+            log_security_event('mfa_failure', request,
+                               detail='Recovery code verify failed', level='warning')
             return _validation_error_response(e)
+
+        log_security_event('mfa_recovery_success', request, user=result['user'])
         return Response({
-            'access': result['access'],
+            'access':  result['access'],
             'refresh': result['refresh'],
-            'user': MeSerializer(result['user']).data,
+            'user':    UserSerializer(result['user']).data,
         })
 
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes   = [PasswordResetThrottle]
 
     @extend_schema(
-        tags=['Auth — Password Reset'],
-        summary='Request password reset',
-        description=(
-            'Sends a password reset email if the address is associated with an active account. '
-            'Always returns 204 regardless of whether the email exists, to prevent user enumeration.'
-        ),
+        tags=['Auth — Password Reset'], summary='Request password reset',
         request=PasswordResetRequestSerializer,
         responses={204: OpenApiResponse(description='Reset email sent (if account exists).')},
         auth=[],
@@ -165,21 +162,20 @@ class PasswordResetRequestView(APIView):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         PasswordResetService.request_reset(email=serializer.validated_data['email'])
+        log_security_event('password_reset_req', request,
+                           detail=serializer.validated_data['email'])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes   = [PasswordResetThrottle]
 
     @extend_schema(
-        tags=['Auth — Password Reset'],
-        summary='Confirm password reset',
-        description='Validates the reset token and sets the new password. The token is single-use.',
+        tags=['Auth — Password Reset'], summary='Confirm password reset',
         request=PasswordResetConfirmSerializer,
-        responses={
-            204: OpenApiResponse(description='Password updated successfully.'),
-            400: OpenApiResponse(description='Invalid, expired, or already used token.'),
-        },
+        responses={204: OpenApiResponse(description='Password updated.'),
+                   400: OpenApiResponse(description='Invalid token.')},
         auth=[],
     )
     def post(self, request):
@@ -192,4 +188,6 @@ class PasswordResetConfirmView(APIView):
             )
         except ValidationError as e:
             return _validation_error_response(e)
+
+        log_security_event('password_reset_confirmed', request)
         return Response(status=status.HTTP_204_NO_CONTENT)

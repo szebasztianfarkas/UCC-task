@@ -49,10 +49,10 @@ class EventSerializer(serializers.ModelSerializer):
 class CreateEventSerializer(serializers.Serializer):
     title       = serializers.CharField(max_length=255)
     occurrence  = serializers.DateTimeField()
-    description = serializers.CharField(required=False, allow_blank=True, default='')
+    description = serializers.CharField(required=False, allow_blank=True, default='', max_length=5000)
 
 
 class UpdateEventSerializer(serializers.Serializer):
     title       = serializers.CharField(max_length=255, required=False)
     occurrence  = serializers.DateTimeField(required=False)
-    description = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True, max_length=5000)

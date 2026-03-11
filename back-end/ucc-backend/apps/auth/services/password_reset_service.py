@@ -1,3 +1,16 @@
+"""
+PasswordResetService — generates and validates password reset tokens,
+sends the reset email, and applies the new password.
+
+Security notes
+──────────────
+• Tokens are single-use and expire after 1 hour.
+• Always returns 204 regardless of whether the email exists — prevents
+  user enumeration.
+• On confirm: invalidates ALL existing refresh tokens for the user by
+  cycling through the blacklist, so stolen sessions don't persist after
+  a password reset.
+"""
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -70,3 +83,21 @@ class PasswordResetService:
 
         reset_token.used = True
         reset_token.save(update_fields=['used'])
+
+        PasswordResetService._blacklist_all_tokens(user)
+
+    @staticmethod
+    def _blacklist_all_tokens(user) -> None:
+        try:
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+            from rest_framework_simplejwt.tokens import RefreshToken as RT
+
+            tokens = OutstandingToken.objects.filter(user=user, blacklistedtoken__isnull=True)
+            for outstanding in tokens:
+                try:
+                    token = RT(outstanding.token)
+                    token.blacklist()
+                except Exception:
+                    pass
+        except Exception:
+            pass
