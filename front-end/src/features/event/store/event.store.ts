@@ -4,9 +4,9 @@ import { eventsApi } from '../api/event.api'
 import type { Event, CreateEventPayload, UpdateEventPayload, EventFilters } from '../types/event.types'
 
 export const useEventsStore = defineStore('events', () => {
-  const events   = ref<Event[]>([])
-  const loading  = ref(false)
-  const error    = ref<string | null>(null)
+  const events = ref<Event[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
   function _replaceEvent(updated: Event) {
     const idx = events.value.findIndex(e => e.id === updated.id)
@@ -15,7 +15,7 @@ export const useEventsStore = defineStore('events', () => {
 
   async function fetchEvents(filters: EventFilters = {}) {
     loading.value = true
-    error.value   = null
+    error.value = null
     try {
       const res = await eventsApi.list(filters)
       events.value = res.data

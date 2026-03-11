@@ -75,15 +75,6 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(tags=['Auth'], summary='Get current user',
-                   responses={200: UserSerializer})
-    def get(self, request):
-        return Response(UserSerializer(request.user).data)
-
-
 class MFAVerifyView(APIView):
     permission_classes = [AllowAny]
     throttle_classes   = [MFAThrottle]

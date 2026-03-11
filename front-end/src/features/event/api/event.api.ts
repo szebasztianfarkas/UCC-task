@@ -5,9 +5,10 @@ import type { Event, CreateEventPayload, UpdateEventPayload, EventFilters } from
 export const eventsApi = {
   list: (filters: EventFilters = {}): Promise<AxiosResponse<Event[]>> => {
     const params: Record<string, string> = {}
-    if (filters.search)   params.search   = filters.search
-    if (filters.upcoming) params.upcoming  = 'true'
+    if (filters.search) params.search = filters.search
+    if (filters.upcoming) params.upcoming = 'true'
     if (filters.attending) params.attending = 'true'
+    if (filters.createdBy) params.createdBy = 'true'
     return apiClient.get('/events/', { params })
   },
 

@@ -1,5 +1,5 @@
 export type MessageRole = 'user' | 'bot' | 'agent' | 'system'
-export type ChatStatus  = 'open' | 'waiting' | 'agent_open' | 'resolved' | 'locked'
+export type ChatStatus = 'open' | 'waiting' | 'agent_open' | 'resolved' | 'locked'
 
 export interface Sender {
   id: number

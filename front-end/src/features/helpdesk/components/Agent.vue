@@ -11,11 +11,7 @@
             <span v-if="totalUnread > 0" class="agent-total-badge">{{ totalUnread }}</span>
           </h2>
           <div class="agent-queue-header-right">
-            <span class="ws-pill" :class="globalWsConnected ? 'ws-pill--on' : 'ws-pill--off'"
-              :title="globalWsConnected ? 'Live' : 'Connecting…'">
-              <span class="ws-dot" />
-              {{ globalWsConnected ? 'Live' : 'Off' }}
-            </span>
+            <WsPill :connected="globalWsConnected" />
             <button class="agent-refresh-btn" @click="loadQueue" :disabled="queueLoading" title="Refresh">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 :class="{ spinning: queueLoading }">
@@ -91,12 +87,12 @@
               <button v-if="activeChat.status === 'waiting'"
                 class="btn-primary btn-sm" @click="assign" :disabled="assigning">
                 <span v-if="!assigning">Take chat</span>
-                <span v-else class="btn-spinner" />
+                <span v-else class="spinner" />
               </button>
               <button v-if="activeChat.status === 'agent_open'"
                 class="btn-danger btn-sm" @click="resolveChat" :disabled="resolving">
                 <span v-if="!resolving">Close chat</span>
-                <span v-else class="btn-spinner" />
+                <span v-else class="spinner" />
               </button>
             </div>
           </div>
@@ -131,7 +127,7 @@
             </button>
           </div>
 
-          <div v-else-if="activeChat.status === 'waiting'" class="hd-notice hd-notice--waiting">
+          <div v-else-if="activeChat.status === 'waiting'" class="notice-bar notice-bar--warning">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
@@ -150,6 +146,7 @@ import { useHelpdeskSocket } from '../composables/useHelpdeskSocket'
 import { useHelpdeskStore } from '../store/helpdesk.store'
 import type { HelpdeskChat, HelpdeskChatSummary, HelpdeskMessage, ChatStatus } from '../types/helpdesk.types'
 import AppSidebar from '@/features/sidebar/components/Sidebar.vue'
+import WsPill from '@/shared/components/WsPill.vue'
 import MessageBubble from './MessageBubble.vue'
 import './agent.css'
 

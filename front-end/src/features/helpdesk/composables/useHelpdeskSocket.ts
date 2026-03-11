@@ -2,14 +2,14 @@ import { ref, type Ref } from 'vue'
 import type { HelpdeskMessage, ChatStatus } from '../types/helpdesk.types'
 
 export interface SocketCallbacks {
-  onMessage:      (msg: HelpdeskMessage) => void
+  onMessage: (msg: HelpdeskMessage) => void
   onStatusChange: (status: ChatStatus, chatId: number) => void
 }
 
 export interface HelpdeskSocket {
   isConnected: Ref<boolean>
-  connect:     (chatId: number) => void
-  disconnect:  () => void
+  connect: (chatId: number) => void
+  disconnect: () => void
 }
 
 const WS_BASE = (() => {
@@ -20,9 +20,9 @@ const WS_BASE = (() => {
 
 export function useHelpdeskSocket(callbacks: SocketCallbacks): HelpdeskSocket {
   const isConnected = ref(false)
-  let ws:            WebSocket | null = null
+  let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  let currentChatId:  number | null = null
+  let currentChatId: number | null = null
   let intentionallyClosed = false
 
   function connect(chatId: number) {
@@ -60,7 +60,7 @@ export function useHelpdeskSocket(callbacks: SocketCallbacks): HelpdeskSocket {
         } else if (data.type === 'status_change') {
           callbacks.onStatusChange(data.status as ChatStatus, data.chat_id as number)
         }
-      } catch {  }
+      } catch { }
     }
 
     ws.onclose = (event) => {

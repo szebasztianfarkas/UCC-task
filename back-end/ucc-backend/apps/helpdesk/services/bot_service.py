@@ -19,7 +19,7 @@ KNOWLEDGE_BASE = [
         ),
     },
     {
-        'triggers': ['join', 'attend', 'rsvp', 'sign', 'going', 'register'],
+        'triggers': ['event', 'events', 'join', 'attend', 'rsvp', 'sign', 'going', 'register'],
         'answer': (
             "To join an event, click the Join button on its card. "
             "You cannot join an event you created yourself. "
@@ -27,14 +27,14 @@ KNOWLEDGE_BASE = [
         ),
     },
     {
-        'triggers': ['leave', 'unjoin', 'withdraw', 'quit', 'drop'],
+        'triggers': ['event', 'events', 'leave', 'unjoin', 'withdraw', 'quit', 'drop'],
         'answer': (
             "To leave an event you have joined, click the Leave button on the event card. "
             "Your spot is freed immediately and the attendee count updates straight away."
         ),
     },
     {
-        'triggers': ['create', 'new', 'add', 'make', 'organise', 'organize', 'host', 'schedule'],
+        'triggers': ['event', 'events', 'create', 'new', 'add', 'make', 'organise', 'organize', 'host', 'schedule'],
         'answer': (
             "Click New event at the top right of the Events page. "
             "Fill in a title and date/time — both are required. "
@@ -44,7 +44,7 @@ KNOWLEDGE_BASE = [
         ),
     },
     {
-        'triggers': ['edit', 'update', 'modify', 'rename', 'change event', 'correct'],
+        'triggers': ['event', 'events', 'edit', 'update', 'modify', 'rename', 'change event', 'correct'],
         'answer': (
             "Click the pencil icon on an event card to edit it. "
             "You can update the title, date/time, and description. "
@@ -52,14 +52,14 @@ KNOWLEDGE_BASE = [
         ),
     },
     {
-        'triggers': ['delete', 'remove event', 'destroy', 'cancel event'],
+        'triggers': ['event', 'events', 'delete', 'remove event', 'destroy', 'cancel event'],
         'answer': (
             "Click the trash icon on an event card you created, then confirm the prompt. "
             "Deletion is permanent — attendees will lose access immediately."
         ),
     },
     {
-        'triggers': ['account', 'profile', 'bio', 'settings', 'username', 'name'],
+        'triggers': ['edit', 'account', 'profile', 'bio', 'settings', 'username', 'name'],
         'answer': (
             "Click your username in the bottom-left sidebar to open your Profile page. "
             "There you can update your bio. "
@@ -68,7 +68,7 @@ KNOWLEDGE_BASE = [
         ),
     },
     {
-        'triggers': ['email', 'address', 'mail', 'inbox'],
+        'triggers': ['change', 'email', 'address', 'mail', 'inbox'],
         'answer': (
             "To change your email, open the Profile page and enter a new address in the Email section. "
             "A confirmation link will be sent to the new address — click it within one hour to apply the change. "

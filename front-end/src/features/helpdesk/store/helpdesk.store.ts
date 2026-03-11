@@ -6,11 +6,11 @@ import type { HelpdeskChat, HelpdeskChatSummary, HelpdeskMessage, ChatStatus } f
 
 export const useHelpdeskStore = defineStore('helpdesk', () => {
 
-  const chat    = ref<HelpdeskChat | null>(null)
+  const chat = ref<HelpdeskChat | null>(null)
   const history = ref<HelpdeskChatSummary[]>([])
   const loading = ref(false)
   const sending = ref(false)
-  const error   = ref<string | null>(null)
+  const error = ref<string | null>(null)
 
   const unreadByChat = reactive<Record<number, number>>({})
 
@@ -49,9 +49,9 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
       const { data } = await helpdeskApi.getChat(chatId)
       if (chat.value?.id === chatId) {
         chat.value.agent_username = data.agent_username
-        chat.value.status         = data.status
+        chat.value.status = data.status
       }
-    } catch {  }
+    } catch { }
   }
 
   function _seedSeen(msgs: HelpdeskMessage[]) {
@@ -70,7 +70,7 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
 
   async function loadActiveOrById(id?: number) {
     loading.value = true
-    error.value   = null
+    error.value = null
     _resetSocket()
 
     try {
@@ -100,12 +100,12 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
     try {
       const { data } = await helpdeskApi.listMyClosed()
       history.value = data
-    } catch {  }
+    } catch { }
   }
 
   async function createChat(): Promise<HelpdeskChat | null> {
     loading.value = true
-    error.value   = null
+    error.value = null
     _resetSocket()
 
     try {
@@ -132,7 +132,7 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
 
       if (data.some(m => m.role === 'system')) {
         const { data: fresh } = await helpdeskApi.getChat(chat.value.id)
-        chat.value.status         = fresh.status
+        chat.value.status = fresh.status
         chat.value.agent_username = fresh.agent_username
       }
       return data

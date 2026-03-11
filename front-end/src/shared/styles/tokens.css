@@ -1,0 +1,62 @@
+:root {
+    --color-bg: #0a0912;
+    --color-surface: rgba(20, 16, 34, 0.84);
+    --color-surface-solid: #141022;
+
+    --color-border: rgba(139, 92, 246, 0.22);
+    --color-border-mid: rgba(139, 92, 246, 0.34);
+    --color-border-sub: rgba(139, 92, 246, 0.16);
+    --color-border-faint: rgba(139, 92, 246, 0.08);
+
+    --color-purple: #7c3aed;
+    --color-purple-mid: #b197ff;
+    --color-purple-soft: rgba(139, 92, 246, 0.12);
+    --color-purple-glow: rgba(124, 58, 237, 0.35);
+
+    --color-teal: #0ea5a0;
+    --color-teal-mid: #38e2cf;
+    --color-teal-soft: rgba(45, 212, 191, 0.12);
+    --color-teal-glow: rgba(45, 212, 191, 0.35);
+
+    --color-text: #f0ecff;
+    --color-text-heading: #faf7ff;
+    --color-text-mid: #d9d1ff;
+    --color-text-sub: #938bb5;
+    --color-text-muted: #7a729c;
+    --color-text-faint: #645c85;
+    --color-text-ghost: #4a4366;
+    --color-text-label: #726a92;
+
+    --color-success: #4ade80;
+    --color-success-soft: rgba(74, 222, 128, 0.12);
+
+    --color-warning: #fb923c;
+    --color-warning-soft: rgba(251, 146, 60, 0.12);
+
+    --color-error: #f87171;
+    --color-error-soft: rgba(248, 113, 113, 0.10);
+    --color-error-border: rgba(248, 113, 113, 0.28);
+
+    --color-info: #60a5fa;
+    --color-info-soft: rgba(96, 165, 250, 0.12);
+
+    --gradient-brand: linear-gradient(135deg, #7c3aed, #0ea5a0);
+    --gradient-shimmer: linear-gradient(90deg, transparent, #7c3aed 40%, #0ea5a0 60%, transparent);
+    --gradient-avatar: linear-gradient(135deg, #7c3aed, #0ea5a0);
+
+    --font-display: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+    --font-body: "Trebuchet MS", Verdana, Tahoma, Arial, sans-serif;
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 14px;
+    --radius-full: 99px;
+
+    --shadow-card: 0 32px 72px rgba(0, 0, 0, 0.55);
+    --shadow-btn: 0 4px 20px rgba(124, 58, 237, 0.3);
+    --shadow-btn-hover: 0 6px 28px rgba(124, 58, 237, 0.4);
+
+    --transition-fast: 0.15s ease;
+    --transition-mid: 0.2s ease;
+}

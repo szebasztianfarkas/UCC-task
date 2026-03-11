@@ -35,7 +35,7 @@ class MeSerializer(UserSerializer):
 class CreateUserSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, min_length=3)
     email    = serializers.EmailField(max_length=254)
-    password = serializers.CharField(write_only=True, min_length=10, max_length=128)
+    password = serializers.CharField(write_only=True, min_length=8, max_length=128)
     bio      = serializers.CharField(required=False, allow_blank=True, default='', max_length=500)
 
     def validate_username(self, value):
@@ -68,5 +68,5 @@ class EmailChangeConfirmSerializer(serializers.Serializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True, max_length=128)
-    new_password = serializers.CharField(write_only=True, min_length=10, max_length=128)
-    totp_code    = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=10)
+    new_password = serializers.CharField(write_only=True, min_length=8, max_length=128)
+    totp_code    = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=8)

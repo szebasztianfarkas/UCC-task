@@ -13,14 +13,14 @@
           <div class="hd-header-left">
             <button class="hd-back-btn" @click="goNew">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"/>
+                <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <div class="hd-icon">
+            <div class="icon-box icon-box--lg">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
             </div>
             <div>
@@ -35,10 +35,10 @@
         <div class="hd-messages" ref="messageList">
           <MessageBubble v-for="msg in store.chat.messages" :key="msg.id" :msg="msg" :is-history="true" />
         </div>
-        <div class="hd-locked-bar">
+        <div class="notice-bar notice-bar--error">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z"/>
-            <rect x="3" y="10" width="18" height="12" rx="2"/>
+            <path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z" />
+            <rect x="3" y="10" width="18" height="12" rx="2" />
           </svg>
           This conversation is archived.
           <button class="hd-link-btn" @click="goNew">Start a new chat →</button>
@@ -48,20 +48,23 @@
       <template v-else-if="!store.chat && !store.loading">
         <header class="hd-header">
           <div class="hd-header-left">
-            <div class="hd-icon">
+            <div class="icon-box icon-box--lg">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
             </div>
-            <div><h1 class="hd-title">Helpdesk</h1><p class="hd-sub">We're here to help</p></div>
+            <div>
+              <h1 class="hd-title">Helpdesk</h1>
+              <p class="hd-sub">We're here to help</p>
+            </div>
           </div>
         </header>
         <div class="hd-state">
           <div class="hd-empty-card">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             <p>Have a question about Evently?</p>
             <span>Our bot answers common questions instantly. If it can't help, a support agent will take over.</span>
@@ -73,11 +76,11 @@
       <template v-else-if="store.chat">
         <header class="hd-header">
           <div class="hd-header-left">
-            <div class="hd-icon">
+            <div class="icon-box icon-box--lg">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
             </div>
             <div>
@@ -92,10 +95,7 @@
             </div>
           </div>
           <div class="hd-header-right">
-            <span class="ws-pill" :class="store.isConnected ? 'ws-pill--on' : 'ws-pill--off'"
-              :title="store.isConnected ? 'Live connection' : 'Reconnecting…'">
-              <span class="ws-dot" />{{ store.isConnected ? 'Live' : 'Off' }}
-            </span>
+            <WsPill :connected="store.isConnected" />
             <span class="hd-status-badge" :class="`hd-status-badge--${store.chat.status}`">
               {{ statusLabel(store.chat.status) }}
             </span>
@@ -109,58 +109,44 @@
           </div>
 
           <template v-for="(msg, idx) in store.chat.messages" :key="msg.id">
-            <MessageBubble
-              :msg="msg"
-              :show-resolution="shouldShowResolution(idx)"
-              :resolving="resolving"
-              @resolve="handleResolve"
-              @request-agent="handleRequestAgent"
-            />
+            <MessageBubble :msg="msg" :show-resolution="shouldShowResolution(idx)" :resolving="resolving"
+              @resolve="handleResolve" @request-agent="handleRequestAgent" />
           </template>
 
           <div v-if="store.sending" class="hd-bubble hd-bubble--bot hd-bubble--typing">
             <div class="hd-bubble-body">
-              <span class="typing-dot"/><span class="typing-dot"/><span class="typing-dot"/>
+              <span class="typing-dot" /><span class="typing-dot" /><span class="typing-dot" />
             </div>
           </div>
 
           <div ref="scrollAnchor" />
         </div>
 
-        <div v-if="store.chat.status === 'waiting'" class="hd-notice hd-notice--waiting">
+        <div v-if="store.chat.status === 'waiting'" class="notice-bar notice-bar--warning">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
           </svg>
           Waiting for a helpdesk agent to join — you can keep adding context below.
         </div>
 
-        <div v-else-if="store.chat.status === 'resolved' || store.chat.status === 'locked'" class="hd-locked-bar">
+        <div v-else-if="store.chat.status === 'resolved' || store.chat.status === 'locked'"
+          class="notice-bar notice-bar--error">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z"/>
-            <rect x="3" y="10" width="18" height="12" rx="2"/>
+            <path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z" />
+            <rect x="3" y="10" width="18" height="12" rx="2" />
           </svg>
           This chat is closed.
           <button class="hd-link-btn" @click="goNew">Start a new chat →</button>
         </div>
 
-        <div
-          v-if="store.chat.status !== 'resolved' && store.chat.status !== 'locked'"
-          class="hd-input-bar"
-        >
-          <textarea
-            v-model="draft"
-            class="hd-input"
-            :placeholder="inputPlaceholder"
-            rows="1"
-            :disabled="store.sending"
-            @keydown.enter.exact.prevent="submit"
-            @input="autoResize"
-            ref="inputEl"
-          />
+        <div v-if="store.chat.status !== 'resolved' && store.chat.status !== 'locked'" class="hd-input-bar">
+          <textarea v-model="draft" class="hd-input" :placeholder="inputPlaceholder" rows="1" :disabled="store.sending"
+            @keydown.enter.exact.prevent="submit" @input="autoResize" ref="inputEl" />
           <button class="hd-send-btn" :disabled="store.sending || !draft.trim()" @click="submit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
           </button>
         </div>
@@ -176,19 +162,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { useHelpdeskStore } from '../store/helpdesk.store'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import AppSidebar from '@/features/sidebar/components/Sidebar.vue'
+import WsPill from '@/shared/components/WsPill.vue'
 import MessageBubble from './MessageBubble.vue'
 import './helpdesk.css'
 
-const store     = useHelpdeskStore()
+const store = useHelpdeskStore()
 const authStore = useAuthStore()
-const route     = useRoute()
-const router    = useRouter()
+const route = useRoute()
+const router = useRouter()
 
-const draft        = ref('')
-const messageList  = ref<HTMLElement | null>(null)
+const draft = ref('')
 const scrollAnchor = ref<HTMLElement | null>(null)
-const inputEl      = ref<HTMLTextAreaElement | null>(null)
-const resolving    = ref(false)
+const inputEl = ref<HTMLTextAreaElement | null>(null)
+const resolving = ref(false)
 
 const historyId = computed(() => route.query.id ? Number(route.query.id) : null)
 const isHistory = computed(() => !!historyId.value)
@@ -215,7 +201,7 @@ onMounted(async () => {
   scrollToBottom()
 })
 
-onUnmounted(() => {})
+onUnmounted(() => { })
 
 watch(() => route.query.id, async (newId) => {
   if (newId) {
@@ -227,7 +213,7 @@ watch(() => route.query.id, async (newId) => {
   await nextTick(); scrollToBottom()
 })
 
-watch(() => store.chat?.messages.length, async () => {
+watch(() => store.chat?.messages?.length || 0, async () => {
   await nextTick()
   scrollToBottom()
   if (store.chat && !isHistory.value) store.clearUnread(store.chat.id)
@@ -250,8 +236,10 @@ function autoResize(e: Event) {
 }
 
 function statusLabel(s: string) {
-  return ({ open: 'Open', waiting: 'Waiting', agent_open: 'With agent',
-            resolved: 'Resolved', locked: 'Locked' } as Record<string, string>)[s] ?? s
+  return ({
+    open: 'Open', waiting: 'Waiting', agent_open: 'With agent',
+    resolved: 'Resolved', locked: 'Locked'
+  } as Record<string, string>)[s] ?? s
 }
 
 function formatDate(iso: string) {
@@ -259,11 +247,11 @@ function formatDate(iso: string) {
 }
 
 function shouldShowResolution(idx: number): boolean {
-  if (!store.chat) return false
+  if (!store.chat || !store.chat.messages) return false
   if (['resolved', 'locked', 'agent_open', 'waiting'].includes(store.chat.status)) return false
   if (store.sending || resolving.value) return false
   const msgs = store.chat.messages
-  const msg  = msgs[idx]
+  const msg = msgs[idx]
   if (msg.role !== 'bot' || msg.content === null) return false
   for (let i = idx + 1; i < msgs.length; i++) {
     if (msgs[i].role === 'bot' && msgs[i].content !== null) return false

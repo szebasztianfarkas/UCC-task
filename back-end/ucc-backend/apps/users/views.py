@@ -16,6 +16,7 @@ from apps.users.serializers import (
 )
 from apps.users.services.user_service import UserService, UserNotFound
 from apps.auth.services.email_change_service import EmailChangeService
+from config.logging import log_security_event
 
 
 def _err(e):
@@ -121,6 +122,8 @@ class MeView(APIView):
     def patch(self, request):
         serializer = UpdateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
         updated = UserService.update_user(request.user, **serializer.validated_data)
         return Response(MeSerializer(User.objects.prefetch_related('groups').get(pk=request.user.pk)).data)
 
