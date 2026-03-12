@@ -54,15 +54,17 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if ((error.response?.status !== 401 && error.response?.status !== 403) || originalRequest._retry) {
       return Promise.reject(error);
     }
-
+    
     const refreshToken = localStorage.getItem("refresh_token");
+
     if (!refreshToken) {
       if (!notGatedAuthURLs.some(v => error.request?.responseURL.includes(v))) clearSession()
       return Promise.reject(error)
     }
+    console.log(isRefreshing)
 
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
