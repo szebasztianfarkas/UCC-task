@@ -70,7 +70,7 @@ class HelpdeskConsumer(AsyncWebsocketConsumer):
             'message': event['message'],
         }))
 
-    async def chat_status_change(self, event):
+    async def status_change(self, event):
         """Broadcast a chat status change."""
         await self.send(text_data=json.dumps({
             'type':   'status_change',

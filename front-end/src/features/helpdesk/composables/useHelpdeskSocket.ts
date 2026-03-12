@@ -55,7 +55,7 @@ export function useHelpdeskSocket(callbacks: SocketCallbacks): HelpdeskSocket {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type === 'chat_message') {
+        if (data.type === 'message') {
           callbacks.onMessage(data.message as HelpdeskMessage)
         } else if (data.type === 'status_change') {
           callbacks.onStatusChange(data.status as ChatStatus, data.chat_id as number)

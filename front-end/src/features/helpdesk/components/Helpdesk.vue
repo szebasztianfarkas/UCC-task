@@ -84,9 +84,7 @@
               </svg>
             </div>
             <div>
-              <h1 class="hd-title">
-                Helpdesk
-              </h1>
+              <h1 class="hd-title">Helpdesk</h1>
               <p class="hd-sub" v-if="store.chat.agent_username">
                 <span class="hd-agent-online-dot" />
                 Agent: <strong>{{ store.chat.agent_username }}</strong>
@@ -140,15 +138,24 @@
           <button class="hd-link-btn" @click="goNew">Start a new chat →</button>
         </div>
 
+        <VoiceCallBar v-if="store.chat.status === 'agent_open'" :call-state="voice.callState.value"
+          :is-muted="voice.isMuted.value" :call-duration="voice.callDuration.value"
+          :remote-username="voice.remoteUsername.value" :peer-speaking="voice.peerSpeaking.value"
+          :local-speaking="voice.localSpeaking.value" :peer-connected="voice.peerConnected.value" peer-label="the agent"
+          :error-message="voice.errorMessage.value" @start="voice.startCall()" @end="voice.endCall()"
+          @accept="voice.acceptCall()" @decline="voice.declineCall()" @toggle-mute="voice.toggleMute()" />
+
         <div v-if="store.chat.status !== 'resolved' && store.chat.status !== 'locked'" class="hd-input-bar">
-          <textarea v-model="draft" class="hd-input" :placeholder="inputPlaceholder" rows="1" :disabled="store.sending"
-            @keydown.enter.exact.prevent="submit" @input="autoResize" ref="inputEl" />
-          <button class="hd-send-btn" :disabled="store.sending || !draft.trim()" @click="submit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
+          <div class="hd-input-row">
+            <textarea v-model="draft" class="hd-input" :placeholder="inputPlaceholder" rows="1"
+              :disabled="store.sending" @keydown.enter.exact.prevent="submit" @input="autoResize" ref="inputEl" />
+            <button class="hd-send-btn" :disabled="store.sending || !draft.trim()" @click="submit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
         </div>
       </template>
 
@@ -161,10 +168,13 @@ import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHelpdeskStore } from '../store/helpdesk.store'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import { useVoiceCall } from '../composables/useVoiceCall'
 import AppSidebar from '@/features/sidebar/components/Sidebar.vue'
 import WsPill from '@/shared/components/WsPill.vue'
 import MessageBubble from './MessageBubble.vue'
+import VoiceCallBar from './VoiceCallBar.vue'
 import './helpdesk.css'
+import './voicecall.css'
 
 const store = useHelpdeskStore()
 const authStore = useAuthStore()
@@ -175,6 +185,24 @@ const draft = ref('')
 const scrollAnchor = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLTextAreaElement | null>(null)
 const resolving = ref(false)
+
+const voice = useVoiceCall({
+  onError(msg) {
+    console.warn('[Voice]', msg)
+  },
+})
+
+watch(
+  () => ({ chatId: store.chat?.id, status: store.chat?.status }),
+  async ({ chatId, status }) => {
+    if (status === 'agent_open' && chatId && authStore.user) {
+      await voice.connect(chatId)
+    } else {
+      voice.disconnect()
+    }
+  },
+  { immediate: true }
+)
 
 const historyId = computed(() => route.query.id ? Number(route.query.id) : null)
 const isHistory = computed(() => !!historyId.value)
@@ -201,7 +229,9 @@ onMounted(async () => {
   scrollToBottom()
 })
 
-onUnmounted(() => { })
+onUnmounted(() => {
+  document.title = 'Evently'
+})
 
 watch(() => route.query.id, async (newId) => {
   if (newId) {
@@ -213,20 +243,23 @@ watch(() => route.query.id, async (newId) => {
   await nextTick(); scrollToBottom()
 })
 
-watch(() => store.chat?.messages?.length || 0, async () => {
+watch(() => store.chat?.messages?.length, async () => {
   await nextTick()
   scrollToBottom()
   if (store.chat && !isHistory.value) store.clearUnread(store.chat.id)
 })
 
 watch(unreadCount, (n) => {
-  document.title = n > 0 ? `(${n}) Helpdesk – Evently` : 'Helpdesk – Evently'
+  document.title = n > 0 ? `(${n}) Help | Evently` : 'Help | Evently'
 })
 
-onUnmounted(() => { document.title = 'Evently' })
-
 function scrollToBottom() {
-  scrollAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  const container = scrollAnchor.value?.parentElement;
+  if (!container) return;
+  container.scrollTo({
+    top: container.scrollHeight,
+    behavior: 'smooth',
+  });
 }
 
 function autoResize(e: Event) {
@@ -247,7 +280,7 @@ function formatDate(iso: string) {
 }
 
 function shouldShowResolution(idx: number): boolean {
-  if (!store.chat || !store.chat.messages) return false
+  if (!store.chat) return false
   if (['resolved', 'locked', 'agent_open', 'waiting'].includes(store.chat.status)) return false
   if (store.sending || resolving.value) return false
   const msgs = store.chat.messages

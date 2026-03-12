@@ -12,6 +12,7 @@ export interface HelpdeskMessage {
   sender: Sender | null
   content: string | null
   created_at: string
+  chat_id: number
 }
 
 export interface HelpdeskChatSummary {
@@ -26,4 +27,5 @@ export interface HelpdeskChatSummary {
 
 export interface HelpdeskChat extends HelpdeskChatSummary {
   messages: HelpdeskMessage[]
+  assigned_agent_username: string | null
 }

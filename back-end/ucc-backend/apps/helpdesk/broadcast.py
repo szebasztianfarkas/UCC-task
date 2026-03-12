@@ -13,6 +13,7 @@ def _serialize_message(msg) -> dict:
         'sender':     {'id': msg.sender.id, 'username': msg.sender.username} if msg.sender else None,
         'content':    msg.content,
         'created_at': msg.created_at.isoformat(),
+        'chat_id':    msg.chat_id,
     }
 
 
@@ -21,8 +22,9 @@ def broadcast_message(chat_id: int, message) -> None:
     async_to_sync(layer.group_send)(
         _room(chat_id),
         {
-            'type':    'chat.message',
+            'type':    'chat_message',
             'message': _serialize_message(message),
+            'chat_id': chat_id
         },
     )
 
@@ -37,8 +39,8 @@ def broadcast_status(chat_id: int, status: str) -> None:
     async_to_sync(layer.group_send)(
         _room(chat_id),
         {
-            'type':   'chat.status_change',
-            'status': status,
+            'type':    'status_change',
+            'status':  status,
             'chat_id': chat_id,
         },
     )

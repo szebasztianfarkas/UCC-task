@@ -16,7 +16,7 @@ class HelpdeskMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HelpdeskMessage
-        fields = ['id', 'role', 'sender', 'content', 'created_at']
+        fields = ['id', 'chat_id', 'role', 'sender', 'content', 'created_at']
 
 
 class HelpdeskChatSerializer(serializers.ModelSerializer):

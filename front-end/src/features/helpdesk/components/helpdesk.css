@@ -477,6 +477,13 @@
   animation: ws-pulse 2s ease-in-out infinite;
 }
 
+.hd-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
 @keyframes ws-pulse {
 
   0%,
@@ -488,8 +495,6 @@
     opacity: 0.4;
   }
 }
-
-
 
 @media (max-width: 768px) {
   .hd-header {

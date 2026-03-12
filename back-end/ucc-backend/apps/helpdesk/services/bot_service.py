@@ -10,7 +10,7 @@ KNOWLEDGE_BASE = [
         'answer': TRANSFER,
     },
     {
-        'triggers': ['event', 'events', 'browse', 'list', 'see', 'view', 'find', 'show'],
+        'triggers': ['event', 'events', 'browse', 'list', 'see', 'view', 'show'],
         'answer': (
             "You can browse all events on the Events dashboard. "
             "Use the search bar to filter by title or description, "
