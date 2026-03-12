@@ -50,10 +50,7 @@ class HelpdeskService:
         if (chat.status == HelpdeskChat.AGENT_OPEN) or (chat.status == HelpdeskChat.WAITING):
             return new_messages
 
-        history = list(
-            chat.messages.exclude(pk=user_msg.pk).values('role', 'content')
-        )
-        result = ask(history, text)
+        result = ask(text)
 
         if result == TRANSFER:
             new_messages += HelpdeskService._do_transfer(chat)
