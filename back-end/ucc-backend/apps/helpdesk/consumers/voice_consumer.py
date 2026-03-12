@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -10,6 +11,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 User = get_user_model()
 
 RELAY_TYPES = {'offer', 'answer', 'ice-candidate', 'call-start', 'call-end', 'call-busy'}
+_room_members: dict[str, set[str]] = defaultdict(set)
 
 
 @database_sync_to_async
@@ -59,15 +61,27 @@ class VoiceSignalConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.room_group, self.channel_name)
         await self.accept()
 
+        for existing_username in list(_room_members[self.room_group]):
+            await self.send(text_data=json.dumps({
+                'type': 'peer-present',
+                'from': existing_username,
+            }))
+
+        _room_members[self.room_group].add(self.username)
         await self.channel_layer.group_send(self.room_group, {
-            'type':     'voice.signal',
-            'payload':  {'type': 'peer-joined', 'from': self.username},
-            'sender':   self.channel_name,
+            'type':    'voice.signal',
+            'payload': {'type': 'peer-joined', 'from': self.username},
+            'sender':  self.channel_name,   # excludes self from receiving echo
         })
 
     async def disconnect(self, code):
         if not hasattr(self, 'room_group'):
             return
+
+        _room_members[self.room_group].discard(self.username)
+        if not _room_members[self.room_group]:
+            del _room_members[self.room_group]
+
         await self.channel_layer.group_send(self.room_group, {
             'type':    'voice.signal',
             'payload': {'type': 'peer-left', 'from': getattr(self, 'username', '?')},

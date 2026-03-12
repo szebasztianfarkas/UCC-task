@@ -186,6 +186,7 @@ export function useVoiceCall(callbacks: VoiceCallCallbacks = {}) {
                 }
                 break
             
+            case 'peer-present':
             case 'peer-joined':
                 peerConnected.value = true
                 break
@@ -230,13 +231,13 @@ export function useVoiceCall(callbacks: VoiceCallCallbacks = {}) {
                 try {
                     const ctx = new AudioContext()
                     const src = ctx.createMediaStreamSource(ev.streams[0])
-                    const anal = ctx.createAnalyser()
-                    anal.fftSize = 512
-                    src.connect(anal)
-                    const buf = new Uint8Array(anal.frequencyBinCount)
+                    const analyzer = ctx.createAnalyser()
+                    analyzer.fftSize = 512
+                    src.connect(analyzer)
+                    const buf = new Uint8Array(analyzer.frequencyBinCount)
                     const vadTimer = setInterval(() => {
                         if (!pc) { clearInterval(vadTimer); ctx.close(); return }
-                        anal.getByteFrequencyData(buf)
+                        analyzer.getByteFrequencyData(buf)
                         const avg = buf.reduce((a, b) => a + b, 0) / buf.length
                         const speaking = avg > 10
                         if (peerSpeaking.value !== speaking) {

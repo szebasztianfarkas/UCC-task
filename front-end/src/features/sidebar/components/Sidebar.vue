@@ -1,5 +1,8 @@
 <template>
-  <aside class="sidebar">
+  <button class="mobile-sidebar-toggle" @click="toggleSidebar(!sidebarOpen)">
+    ☰
+  </button>
+  <aside class="sidebar" :class="{ 'sidebar--open': sidebarOpen }">
 
     <div class="sidebar-brand">
       <span class="brand-mark">⬡</span>
@@ -11,6 +14,7 @@
         class="nav-item"
         :class="{ 'nav-item--active': route.name === 'dashboard' }"
         to="/dashboard"
+        @click="toggleSidebar(false)"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -26,7 +30,7 @@
         class="nav-item"
         :class="{ 'nav-item--active': route.name === 'helpdesk' && !route.query.id }"
         to="/helpdesk"
-        @click="handleHelpdeskClick"
+        @click="handleHelpdeskClick; toggleSidebar(false)"
       >
         <span class="nav-item-icon-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -47,6 +51,7 @@
           class="nav-item nav-item--history"
           :class="{ 'nav-item--active': route.query.id === String(c.id) }"
           :to="{ name: 'helpdesk', query: { id: c.id } }"
+          @click="toggleSidebar(false)"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -64,6 +69,7 @@
         class="nav-item"
         :class="{ 'nav-item--active': route.name === 'helpdesk-agent' }"
         to="/helpdesk/agent"
+        @click="toggleSidebar(false)"
       >
         <span class="nav-item-icon-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -79,7 +85,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <RouterLink class="user-chip" to="/profile" title="Edit profile">
+      <RouterLink class="user-chip" to="/profile" title="Edit profile" @click="toggleSidebar(false)">
         <div class="user-initial">{{ userInitial }}</div>
         <div class="user-info">
           <span class="user-name">{{ auth.user?.username }}</span>
@@ -102,10 +108,16 @@
     </div>
 
   </aside>
+
+  <div
+    class="sidebar-backdrop"
+    :class="{ 'sidebar-backdrop--visible': sidebarOpen }"
+    @click="toggleSidebar(false)"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuth } from '@/features/auth/composables/useAuth'
 import { useHelpdeskStore } from '@/features/helpdesk/store/helpdesk.store'
@@ -114,6 +126,7 @@ import './sidebar.css'
 const { auth, handleLogout } = useAuth()
 const route         = useRoute()
 const helpdeskStore = useHelpdeskStore()
+const sidebarOpen = ref(false);
 
 const userInitial = computed(() =>
   (auth.user?.username?.[0] || '?').toUpperCase()
@@ -132,10 +145,19 @@ function handleHelpdeskClick() {
   }
 }
 
+function toggleSidebar(val: boolean) {
+  sidebarOpen.value = val;
+}
+
 onMounted(async () => {
+  document.body.classList.add("has-sidebar");
   await helpdeskStore.loadHistory()
   if (isAgent.value) {
     helpdeskStore.connectAgentSocket()
   }
+})
+
+onUnmounted(() => {
+  document.body.classList.remove("has-sidebar");
 })
 </script>
