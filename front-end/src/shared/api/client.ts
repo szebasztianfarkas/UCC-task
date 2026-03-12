@@ -64,7 +64,6 @@ apiClient.interceptors.response.use(
       if (!notGatedAuthURLs.some(v => error.request?.responseURL.includes(v))) clearSession()
       return Promise.reject(error)
     }
-    console.log(isRefreshing)
 
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
