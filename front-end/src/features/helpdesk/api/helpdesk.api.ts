@@ -1,6 +1,6 @@
 import apiClient from '@/shared/api/client'
 import type { AxiosResponse } from 'axios'
-import type { HelpdeskChat, HelpdeskChatSummary, HelpdeskMessage } from '../types/helpdesk.types'
+import type { HelpdeskChat, HelpdeskChatSummary, HelpdeskMessage, AgentHistoryPage } from '../types/helpdesk.types'
 
 export const helpdeskApi = {
   listMyClosed: (): Promise<AxiosResponse<HelpdeskChatSummary[]>> => apiClient.get('/helpdesk/my/'),
@@ -13,4 +13,7 @@ export const helpdeskApi = {
   agentQueue: (): Promise<AxiosResponse<HelpdeskChatSummary[]>> => apiClient.get('/helpdesk/agent/queue/'),
   agentAssign: (id: number): Promise<AxiosResponse<HelpdeskChat>> => apiClient.post(`/helpdesk/agent/${id}/assign/`),
   agentResolve: (id: number): Promise<AxiosResponse<HelpdeskChat>> => apiClient.post(`/helpdesk/agent/${id}/resolve/`),
+  agentHistory: (page = 1, search = ''): Promise<AxiosResponse<AgentHistoryPage>> => apiClient.get('/helpdesk/agent/history/', { params: { page, search: search || undefined } }),
+  getUnreadCounts: (): Promise<AxiosResponse<Record<number, number>>> => apiClient.get('/helpdesk/unread-counts/'),
+  markRead: (id: number): Promise<AxiosResponse<void>> => apiClient.post(`/helpdesk/${id}/read/`),
 }

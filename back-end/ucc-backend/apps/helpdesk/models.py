@@ -67,7 +67,6 @@ class HelpdeskMessage(models.Model):
         related_name='messages',
     )
     role       = models.CharField(max_length=8, choices=ROLE_CHOICES)
-
     sender     = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -83,3 +82,24 @@ class HelpdeskMessage(models.Model):
     def __str__(self):
         preview = (self.content or '')[:60]
         return f'[{self.role}] {preview}'
+
+
+class ChatReadState(models.Model):
+    user    = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='helpdesk_read_states',
+    )
+    chat    = models.ForeignKey(
+        HelpdeskChat,
+        on_delete=models.CASCADE,
+        related_name='read_states',
+    )
+    last_read_message_id = models.IntegerField(default=0)
+    updated_at           = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [('user', 'chat')]
+
+    def __str__(self):
+        return f'{self.user} read up to msg #{self.last_read_message_id} in Chat #{self.chat_id}'

@@ -4,49 +4,109 @@
 
     <div class="agent-layout">
       <aside class="agent-queue">
-        <div class="agent-queue-header">
-          <h2 class="agent-queue-title">
-            Queue
-            <span v-if="totalUnread > 0" class="agent-total-badge">{{ totalUnread }}</span>
-          </h2>
-          <div class="agent-queue-header-right">
-            <WsPill :connected="store.isConnected" />
-            <button class="agent-refresh-btn" @click="loadQueue" :disabled="queueLoading" title="Refresh">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                :class="{ spinning: queueLoading }">
-                <polyline points="23 4 23 10 17 10" />
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <div class="agent-panel" ref="panelEl">
 
-        <div v-if="queueLoading && !queue.length" class="agent-queue-empty">
-          <div class="hd-spinner" />
-        </div>
-        <div v-else-if="!queue.length" class="agent-queue-empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <p>All clear</p>
-        </div>
-        <div v-else class="agent-queue-list">
-          <button v-for="c in queue" :key="c.id" class="agent-queue-item" :class="{
-            'agent-queue-item--active': activeChat?.id === c.id,
-            [`agent-queue-item--${c.status}`]: true,
-          }" @click="openChat(c.id)">
-            <div class="aqi-top">
-              <span class="aqi-user">{{ c.user_username }}</span>
-              <div class="aqi-right">
-                <span v-if="store.agentUnreadByChat[c.id]" class="aqi-unread-badge">
-                  {{ store.agentUnreadByChat[c.id] > 9 ? "9+" : store.agentUnreadByChat[c.id] }}
-                </span>
-                <span class="aqi-status-dot" :class="`aqi-dot--${c.status}`" />
+          <div class="agent-queue-section" :style="{ flexBasis: queuePct + '%' }">
+            <div class="agent-queue-header">
+              <h2 class="agent-queue-title">
+                Queue
+                <span v-if="totalUnread > 0" class="agent-total-badge">{{ totalUnread }}</span>
+              </h2>
+              <div class="agent-queue-header-right">
+                <WsPill :connected="store.isConnected" />
+                <button class="agent-refresh-btn" @click="loadQueue" :disabled="queueLoading" title="Refresh">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    :class="{ spinning: queueLoading }">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                </button>
               </div>
             </div>
-            <p v-if="c.last_message" class="aqi-preview">{{ c.last_message.content }}</p>
-            <span class="aqi-time">{{ timeAgo(c.updated_at) }}</span>
-          </button>
+
+            <div v-if="queueLoading && !queue.length" class="agent-queue-empty">
+              <div class="hd-spinner" />
+            </div>
+            <div v-else-if="!queue.length" class="agent-queue-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <p>All clear</p>
+            </div>
+            <div v-else class="agent-queue-list">
+              <button v-for="c in queue" :key="c.id" class="agent-queue-item" :class="{
+                'agent-queue-item--active': activeChat?.id === c.id,
+                [`agent-queue-item--${c.status}`]: true,
+              }" @click="openChat(c.id)">
+                <div class="aqi-top">
+                  <span class="aqi-user">{{ c.user_username }}</span>
+                  <div class="aqi-right">
+                    <span v-if="store.agentUnreadByChat[c.id]" class="aqi-unread-badge">
+                      {{ store.agentUnreadByChat[c.id] > 9 ? "9+" : store.agentUnreadByChat[c.id] }}
+                    </span>
+                    <span class="aqi-status-dot" :class="`aqi-dot--${c.status}`" />
+                  </div>
+                </div>
+                <p v-if="c.last_message" class="aqi-preview">{{ c.last_message.content }}</p>
+                <span class="aqi-time">{{ timeAgo(c.updated_at) }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="agent-panel-divider" :class="{ 'agent-panel-divider--dragging': dragging }"
+            @mousedown.prevent="startDrag">
+            <div class="agent-panel-divider-grip">
+              <span /><span /><span />
+            </div>
+          </div>
+
+          <div class="agent-history-section" :style="{ flexBasis: historyPct + '%' }">
+            <div class="agent-history-header">
+              <span class="agent-history-title">History</span>
+              <input v-model="historySearch" class="agent-history-search" placeholder="Search…"
+                @input="debouncedSearch" />
+            </div>
+
+            <div v-if="historyLoading" class="agent-history-loading">
+              <div class="hd-spinner" />
+            </div>
+            <div v-else-if="!historyItems.length" class="agent-history-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <p>{{ historySearch ? 'No results' : 'No closed chats yet' }}</p>
+            </div>
+            <div v-else class="agent-history-list">
+              <button v-for="c in historyItems" :key="c.id" class="agent-history-item"
+                :class="{ 'agent-history-item--active': activeChat?.id === c.id }" @click="openChat(c.id)">
+                <div class="ahi-top">
+                  <span class="ahi-user">{{ c.user_username }}</span>
+                  <span class="ahi-status" :class="`ahi-status--${c.status}`">{{ c.status }}</span>
+                </div>
+                <p v-if="c.last_message" class="ahi-preview">{{ c.last_message.content }}</p>
+                <span class="ahi-agent">
+                  {{ c.agent_username ? `Agent: ${c.agent_username}` : 'Unassigned' }}
+                  · {{ timeAgo(c.updated_at) }}
+                </span>
+              </button>
+            </div>
+
+            <div v-if="historyPages > 1" class="agent-history-pagination">
+              <button class="agent-history-page-btn" :disabled="historyPage <= 1" @click="changePage(historyPage - 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              <span class="agent-history-page-info">{{ historyPage }} / {{ historyPages }}</span>
+              <button class="agent-history-page-btn" :disabled="historyPage >= historyPages"
+                @click="changePage(historyPage + 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
         </div>
       </aside>
 
@@ -55,7 +115,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <p>Select a chat from the queue</p>
+          <p>Select a chat from the queue or history</p>
         </div>
 
         <div v-else-if="chatLoading" class="agent-empty">
@@ -70,7 +130,7 @@
                 <p class="acu-name">{{ activeChat.user_username }}</p>
                 <p class="acu-meta">
                   Chat #{{ activeChat.id }} · {{ formatDate(activeChat.created_at) }}
-                  <span v-if="store.isConnected" class="acu-live-dot" title="Live connection" />
+                  <span v-if="store.isConnected && isActiveChatLive" class="acu-live-dot" title="Live connection" />
                 </p>
               </div>
             </div>
@@ -162,6 +222,62 @@ const agentDraft = ref('')
 const agentMsgList = ref<HTMLElement | null>(null)
 const agentInputEl = ref<HTMLTextAreaElement | null>(null)
 
+const isActiveChatLive = computed(() =>
+  !!activeChat.value && ['waiting', 'agent_open'].includes(activeChat.value.status)
+)
+
+const panelEl = ref<HTMLElement | null>(null)
+const queuePct = ref(55)
+const historyPct = computed(() => 100 - queuePct.value)
+const dragging = ref(false)
+
+function startDrag(e: MouseEvent) {
+  dragging.value = true
+  const startY = e.clientY
+  const startPct = queuePct.value
+  const panel = panelEl.value
+  if (!panel) return
+
+  function onMove(ev: MouseEvent) {
+    const totalH = panel.getBoundingClientRect().height
+    const deltaPct = ((ev.clientY - startY) / totalH) * 100
+    queuePct.value = Math.min(85, Math.max(15, startPct + deltaPct))
+  }
+  function onUp() {
+    dragging.value = false
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
+const historyItems = ref<HelpdeskChatSummary[]>([])
+const historyPage = ref(1)
+const historyPages = ref(1)
+const historyLoading = ref(false)
+const historySearch = ref('')
+let searchDebounce: ReturnType<typeof setTimeout> | null = null
+
+async function loadHistory(page = 1) {
+  historyLoading.value = true
+  try {
+    const { data } = await helpdeskApi.agentHistory(page, historySearch.value)
+    historyItems.value = data.results
+    historyPage.value = data.page
+    historyPages.value = data.pages
+  } catch { } finally {
+    historyLoading.value = false
+  }
+}
+
+function debouncedSearch() {
+  if (searchDebounce) clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => loadHistory(1), 320)
+}
+
+function changePage(p: number) { loadHistory(p) }
+
 const totalUnread = computed(() =>
   Object.values(store.agentUnreadByChat).reduce((s, n) => s + n, 0)
 )
@@ -191,6 +307,7 @@ function handleAgentMessage(msg: HelpdeskMessage) {
       }
     }
     activeChat.value.messages.push(msg)
+    store.clearAgentUnread(chatId)
   } else {
     if (msg.role === 'user') {
       store.agentUnreadByChat[chatId] = (store.agentUnreadByChat[chatId] ?? 0) + 1
@@ -212,9 +329,7 @@ function handleAgentStatusChange(newStatus: ChatStatus, chatId: number) {
     activeChat.value.status = newStatus
     if (newStatus === 'agent_open') {
       helpdeskApi.getChat(chatId).then(({ data }) => {
-        if (activeChat.value?.id === chatId) {
-          activeChat.value.agent_username = data.agent_username
-        }
+        if (activeChat.value?.id === chatId) activeChat.value.agent_username = data.agent_username
       }).catch(() => { })
     }
   }
@@ -222,6 +337,7 @@ function handleAgentStatusChange(newStatus: ChatStatus, chatId: number) {
   if (newStatus === 'resolved' || newStatus === 'locked') {
     queue.value = queue.value.filter(c => c.id !== chatId)
     seenIdsByChatId.delete(chatId)
+    loadHistory(historyPage.value)
   }
 }
 
@@ -240,17 +356,17 @@ watch(
 watch(
   () => activeChat.value?.messages.length,
   async () => {
-    await nextTick()
-    scrollMsgs()
-  }
-)
+    await nextTick();
+    scrollMsgs();
+  },
+);
 
 let queuePollTimer: ReturnType<typeof setInterval>
 
 onMounted(async () => {
   store.setAgentCallbacks(handleAgentMessage, handleAgentStatusChange)
   store.connectAgentSocket()
-  await loadQueue()
+  await Promise.all([loadQueue(), loadHistory()])
   queuePollTimer = setInterval(loadQueue, 30_000)
 })
 
@@ -258,6 +374,7 @@ onUnmounted(() => {
   clearInterval(queuePollTimer)
   store.setAgentCallbacks(null, null)
   voice.disconnect()
+  if (searchDebounce) clearTimeout(searchDebounce)
 })
 
 async function loadQueue() {
@@ -280,6 +397,7 @@ async function openChat(id: number) {
     const seen = _seenFor(id)
     seen.clear()
     data.messages.forEach((m: HelpdeskMessage) => seen.add(m.id))
+    helpdeskApi.markRead(id).catch(() => { })
   } finally {
     chatLoading.value = false
   }
@@ -315,6 +433,7 @@ async function resolveChat() {
     activeChat.value.status = 'resolved'
     queue.value = queue.value.filter(c => c.id !== activeChat.value!.id)
     voice.disconnect()
+    loadHistory(historyPage.value)
   } finally {
     resolving.value = false
   }
@@ -341,7 +460,6 @@ async function agentSend() {
   try {
     const { data } = await helpdeskApi.sendMessage(activeChat.value.id, text)
     const seen = _seenFor(activeChat.value.id)
-
     const tempIndex = activeChat.value.messages.findIndex(m => m.id === tempId)
     if (tempIndex !== -1) {
       activeChat.value.messages.splice(tempIndex, 1, ...data)
@@ -360,13 +478,13 @@ async function agentSend() {
 }
 
 function scrollMsgs() {
-  const el = agentMsgList.value
-  if (!el) return
+  const el = agentMsgList.value;
+  if (!el) return;
 
   el.scrollTo({
     top: el.scrollHeight,
     behavior: "smooth",
-  })
+  });
 }
 
 function autoResize(e: Event) {
@@ -374,18 +492,15 @@ function autoResize(e: Event) {
   el.style.height = 'auto'
   el.style.height = Math.min(el.scrollHeight, 140) + 'px'
 }
-
 function statusLabel(s: string) {
   return ({
     open: 'Open', waiting: 'Waiting', agent_open: 'With agent',
     resolved: 'Resolved', locked: 'Locked'
   } as Record<string, string>)[s] ?? s
 }
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })
 }
-
 function timeAgo(iso: string) {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
   if (m < 1) return 'just now'

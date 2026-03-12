@@ -246,7 +246,6 @@ watch(() => route.query.id, async (newId) => {
 watch(() => store.chat?.messages?.length, async () => {
   await nextTick()
   scrollToBottom()
-  if (store.chat && !isHistory.value) store.clearUnread(store.chat.id)
 })
 
 watch(unreadCount, (n) => {

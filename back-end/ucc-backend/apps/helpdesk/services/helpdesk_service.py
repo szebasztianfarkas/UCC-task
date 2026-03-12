@@ -50,7 +50,10 @@ class HelpdeskService:
         if (chat.status == HelpdeskChat.AGENT_OPEN) or (chat.status == HelpdeskChat.WAITING):
             return new_messages
 
-        result = ask(text)
+        history = list(
+            chat.messages.exclude(pk=user_msg.pk).values('role', 'content')
+        )
+        result = ask(history, text)
 
         if result == TRANSFER:
             new_messages += HelpdeskService._do_transfer(chat)
@@ -66,7 +69,6 @@ class HelpdeskService:
 
     @staticmethod
     def resolve_by_user(chat: HelpdeskChat) -> HelpdeskChat:
-        """User clicked 'Yes, solved'. Close the chat."""
         if chat.is_closed:
             raise ValidationError('Chat is already closed.')
         chat.status = HelpdeskChat.RESOLVED
@@ -87,12 +89,118 @@ class HelpdeskService:
 
     @staticmethod
     def list_agent_chats() -> list[HelpdeskChat]:
+        """All chats needing attention: waiting + agent_open."""
         return list(
             HelpdeskChat.objects
             .filter(status__in=[HelpdeskChat.WAITING, HelpdeskChat.AGENT_OPEN])
             .select_related('user', 'assigned_agent')
             .order_by('updated_at')
         )
+
+    @staticmethod
+    def mark_chat_read(user, chat: 'HelpdeskChat') -> None:
+        from apps.helpdesk.models import ChatReadState
+        latest = chat.messages.order_by('-id').values_list('id', flat=True).first()
+        if latest is None:
+            return
+        ChatReadState.objects.update_or_create(
+            user=user,
+            chat=chat,
+            defaults={'last_read_message_id': latest},
+        )
+
+    @staticmethod
+    def _unread_count_for(user, chat: 'HelpdeskChat') -> int:
+        from apps.helpdesk.models import ChatReadState
+        try:
+            state = ChatReadState.objects.get(user=user, chat=chat)
+            last_read = state.last_read_message_id
+        except ChatReadState.DoesNotExist:
+            last_read = 0
+        return (
+            chat.messages
+            .filter(id__gt=last_read)
+            .exclude(role='system')
+            .exclude(sender=user)
+            .count()
+        )
+
+    @staticmethod
+    def get_user_unread_counts(user) -> dict:
+        from apps.helpdesk.models import ChatReadState
+        active_chats = list(
+            HelpdeskChat.objects
+            .filter(user=user)
+            .exclude(status__in=[HelpdeskChat.RESOLVED, HelpdeskChat.LOCKED])
+            .prefetch_related('messages')
+        )
+        if not active_chats:
+            return {}
+
+        states = {
+            rs.chat_id: rs.last_read_message_id
+            for rs in ChatReadState.objects.filter(user=user, chat__in=active_chats)
+        }
+
+        result = {}
+        for chat in active_chats:
+            last_read = states.get(chat.id, 0)
+            count = (
+                chat.messages
+                .filter(id__gt=last_read)
+                .exclude(role='system')
+                .exclude(sender=user)
+                .count()
+            )
+            if count:
+                result[chat.id] = count
+        return result
+
+    @staticmethod
+    def get_agent_unread_counts(agent) -> dict:
+        from apps.helpdesk.models import ChatReadState
+        active_chats = list(
+            HelpdeskChat.objects
+            .exclude(status__in=[HelpdeskChat.RESOLVED, HelpdeskChat.LOCKED])
+            .prefetch_related('messages')
+        )
+        if not active_chats:
+            return {}
+
+        states = {
+            rs.chat_id: rs.last_read_message_id
+            for rs in ChatReadState.objects.filter(user=agent, chat__in=active_chats)
+        }
+
+        result = {}
+        for chat in active_chats:
+            last_read = states.get(chat.id, 0)
+            count = (
+                chat.messages
+                .filter(id__gt=last_read, role='user')
+                .count()
+            )
+            if count:
+                result[chat.id] = count
+        return result
+
+    @staticmethod
+    def list_all_closed(search: str = '', page: int = 1, page_size: int = 20):
+        from django.db.models import Q
+        qs = (
+            HelpdeskChat.objects
+            .filter(status__in=[HelpdeskChat.RESOLVED, HelpdeskChat.LOCKED])
+            .select_related('user', 'assigned_agent')
+            .order_by('-updated_at')
+        )
+        if search:
+            qs = qs.filter(
+                Q(user__username__icontains=search) |
+                Q(assigned_agent__username__icontains=search)
+            )
+        total  = qs.count()
+        offset = (page - 1) * page_size
+        return list(qs[offset:offset + page_size]), total
 
     @staticmethod
     def assign_agent(chat: HelpdeskChat, agent) -> HelpdeskChat:
@@ -132,7 +240,6 @@ class HelpdeskService:
             content=f'Chat resolved by agent {agent.username}.'
         )
         return chat
-
 
     @staticmethod
     def _do_transfer(chat: HelpdeskChat) -> list[HelpdeskMessage]:

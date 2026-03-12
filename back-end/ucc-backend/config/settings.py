@@ -71,9 +71,13 @@ CHANNEL_LAYERS = {
     },
 }
 
-DATABASES = {
-    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
-}
+_db_config = env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
+
+if _db_config.get('ENGINE') == 'django.db.backends.sqlite3':
+    _db_config.setdefault('OPTIONS', {})
+    _db_config['OPTIONS']['timeout'] = 20 
+
+DATABASES = {'default': _db_config}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -104,6 +108,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        "rest_framework.authentication.SessionAuthentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -175,15 +180,15 @@ SECURE_BROWSER_XSS_FILTER    = True
 X_FRAME_OPTIONS              = 'DENY'
 REFERRER_POLICY              = 'strict-origin-when-cross-origin'
 
-CSP_DEFAULT_SRC  = ("'self'",)
-CSP_SCRIPT_SRC   = ("'self'",)
-CSP_STYLE_SRC    = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
-CSP_FONT_SRC     = ("'self'", "https://fonts.gstatic.com")
-CSP_IMG_SRC      = ("'self'", "data:")
-CSP_CONNECT_SRC  = ("'self'", "wss:", "ws:")
-CSP_FRAME_SRC    = ("'none'",)
-CSP_OBJECT_SRC   = ("'none'",)
-CSP_BASE_URI     = ("'self'",)
+CSP_DEFAULT_SRC  = ("'self'", "https://cdn.jsdelivr.net")
+CSP_SCRIPT_SRC   = ("'self'", "https://cdn.jsdelivr.net","'unsafe-inline'")
+CSP_STYLE_SRC    = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net")
+CSP_FONT_SRC     = ("'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net")
+CSP_IMG_SRC      = ("'self'", "data:", "https://cdn.jsdelivr.net")
+CSP_CONNECT_SRC  = ("'self'", "wss:", "ws:", "https://cdn.jsdelivr.net")
+CSP_FRAME_SRC    = ("'none'", "https://cdn.jsdelivr.net")
+CSP_OBJECT_SRC   = ("'none'", "https://cdn.jsdelivr.net")
+CSP_BASE_URI     = ("'self'", "https://cdn.jsdelivr.net")
 
 MIDDLEWARE.append('config.security.SecurityHeadersMiddleware')
 
@@ -215,3 +220,11 @@ LOGGING = {
         },
     },
 }
+
+from django.db.backends.signals import connection_created
+ 
+def _set_wal_mode(sender, connection, **kwargs):
+    if connection.vendor == 'sqlite':
+        connection.cursor().execute('PRAGMA journal_mode=WAL;')
+ 
+connection_created.connect(_set_wal_mode)

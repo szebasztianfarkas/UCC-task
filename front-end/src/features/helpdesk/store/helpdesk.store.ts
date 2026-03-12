@@ -6,7 +6,6 @@ import { useAgentSocket } from '../composables/useAgentSocket'
 import type { HelpdeskChat, HelpdeskChatSummary, HelpdeskMessage, ChatStatus } from '../types/helpdesk.types'
 
 export const useHelpdeskStore = defineStore('helpdesk', () => {
-
   const chat = ref<HelpdeskChat | null>(null)
   const history = ref<HelpdeskChatSummary[]>([])
   const loading = ref(false)
@@ -14,12 +13,27 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
   const error = ref<string | null>(null)
 
   const unreadByChat = reactive<Record<number, number>>({})
-
   const agentUnreadByChat = reactive<Record<number, number>>({})
 
   const agentQueueHasUnread = ref(false)
 
   const seenMessageIds = new Set<number>()
+
+  async function fetchUnreadCounts() {
+    try {
+      const { data } = await helpdeskApi.getUnreadCounts()
+      Object.keys(unreadByChat).forEach(k => delete unreadByChat[+k])
+      Object.keys(agentUnreadByChat).forEach(k => delete agentUnreadByChat[+k])
+
+      Object.entries(data).forEach(([chatId, count]) => {
+        const id = Number(chatId)
+        unreadByChat[id] = count
+        agentUnreadByChat[id] = count
+      })
+
+      agentQueueHasUnread.value = Object.keys(agentUnreadByChat).length > 0
+    } catch { }
+  }
 
   const { isConnected, connect, disconnect } = useHelpdeskSocket({
 
@@ -119,7 +133,7 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
         chat.value.agent_username = data.agent_username
         chat.value.status = data.status
       }
-    } catch {  }
+    } catch { }
   }
 
   function _seedSeen(msgs: HelpdeskMessage[]) {
@@ -130,7 +144,6 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
     disconnect()
     seenMessageIds.clear()
   }
-
 
   function clearUnread(chatId: number) {
     delete unreadByChat[chatId]
@@ -156,7 +169,10 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
           const { data } = await helpdeskApi.getActiveChat()
           chat.value = data
           _seedSeen(data.messages)
-          if (!['resolved', 'locked'].includes(data.status)) connect(data.id)
+          if (!['resolved', 'locked'].includes(data.status)) {
+            connect(data.id)
+            helpdeskApi.markRead(data.id).catch(() => { })
+          }
         } catch (e: any) {
           if (e?.response?.status === 204) chat.value = null
           else throw e
@@ -173,7 +189,7 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
     try {
       const { data } = await helpdeskApi.listMyClosed()
       history.value = data
-    } catch {  }
+    } catch { }
   }
 
   async function createChat(): Promise<HelpdeskChat | null> {
@@ -270,11 +286,32 @@ export const useHelpdeskStore = defineStore('helpdesk', () => {
     } catch { return false }
   }
 
+  function resetSession() {
+    disconnect()
+    seenMessageIds.clear()
+
+    agentSocket.disconnect()
+    agentSocketStarted = false
+
+    Object.keys(unreadByChat).forEach(k => delete unreadByChat[+k])
+    Object.keys(agentUnreadByChat).forEach(k => delete agentUnreadByChat[+k])
+    agentQueueHasUnread.value = false
+
+    _onAgentMessage = null
+    _onAgentStatusChange = null
+
+    chat.value = null
+    history.value = []
+    error.value = null
+  }
+
   return {
     chat, history, loading, sending, error, isConnected,
     unreadByChat, agentUnreadByChat, agentQueueHasUnread,
+    fetchUnreadCounts,
     clearUnread, clearAgentUnread,
     connectAgentSocket, refreshAgentRooms, setAgentCallbacks,
+    resetSession,
     loadActiveOrById, loadHistory, createChat,
     sendMessage, resolve, requestAgent,
   }

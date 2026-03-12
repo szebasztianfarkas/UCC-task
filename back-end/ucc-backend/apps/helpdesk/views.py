@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -78,10 +79,12 @@ class ChatDetailView(APIView):
         text = serializer.validated_data['text']
 
         try:
-            if _is_agent(request.user) and chat.status == HelpdeskChat.AGENT_OPEN:
-                msgs = [HelpdeskService.post_agent_message(chat, request.user, text)]
-            else:
-                msgs = HelpdeskService.post_user_message(chat, text)
+            with transaction.atomic():
+                if _is_agent(request.user) and chat.status == HelpdeskChat.AGENT_OPEN:
+                    msgs = [HelpdeskService.post_agent_message(chat, request.user, text)]
+                else:
+                    msgs = HelpdeskService.post_user_message(chat, text)
+                HelpdeskService.mark_chat_read(request.user, chat)
         except ValidationError as e:
             return _err(e)
 
@@ -175,3 +178,54 @@ class AgentResolveView(APIView):
             broadcast_message(chat.id, sys_msg)
         broadcast_status(chat.id, chat.status)
         return Response(HelpdeskChatSerializer(chat).data)
+
+
+class AgentHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['Helpdesk - Agent'],
+        summary='All resolved/locked chats (agent history)',
+        responses={200: HelpdeskChatSummarySerializer(many=True)},
+    )
+    def get(self, request):
+        if not _is_agent(request.user):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        search    = request.query_params.get('search', '').strip()
+        try:
+            page  = max(1, int(request.query_params.get('page', 1)))
+        except ValueError:
+            page  = 1
+        chats, total = HelpdeskService.list_all_closed(search=search, page=page)
+        return Response({
+            'results': HelpdeskChatSummarySerializer(chats, many=True).data,
+            'total':   total,
+            'page':    page,
+            'pages':   max(1, (total + 19) // 20),
+        })
+
+
+class MarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(tags=['Helpdesk'], summary='Mark a chat as fully read',
+                   responses={204: None})
+    def post(self, request, pk):
+        chat = get_object_or_404(HelpdeskChat, pk=pk)
+        if not _is_agent(request.user) and chat.user != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        HelpdeskService.mark_chat_read(request.user, chat)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UnreadCountsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(tags=['Helpdesk'], summary='Get unread message counts per chat',
+                   responses={200: None})
+    def get(self, request):
+        if _is_agent(request.user):
+            counts = HelpdeskService.get_agent_unread_counts(request.user)
+        else:
+            counts = HelpdeskService.get_user_unread_counts(request.user)
+        return Response(counts)

@@ -1,5 +1,5 @@
 export type MessageRole = 'user' | 'bot' | 'agent' | 'system'
-export type ChatStatus = 'open' | 'waiting' | 'agent_open' | 'resolved' | 'locked'
+export type ChatStatus  = 'open' | 'waiting' | 'agent_open' | 'resolved' | 'locked'
 
 export interface Sender {
   id: number
@@ -28,4 +28,11 @@ export interface HelpdeskChatSummary {
 export interface HelpdeskChat extends HelpdeskChatSummary {
   messages: HelpdeskMessage[]
   assigned_agent_username: string | null
+}
+
+export interface AgentHistoryPage {
+  results: HelpdeskChatSummary[]
+  total:   number
+  page:    number
+  pages:   number
 }

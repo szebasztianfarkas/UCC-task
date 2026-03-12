@@ -53,7 +53,6 @@ export function useAgentSocket(callbacks: AgentSocketCallbacks) {
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data)
-                console.log(data)
                 if (data.type === 'message') {
                     callbacks.onMessage(data.message as HelpdeskMessage)
                 } else if (data.type === 'status_change') {
